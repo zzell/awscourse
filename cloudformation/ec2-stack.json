@@ -1,0 +1,94 @@
+{
+  "Description": "Deploy ec2",
+  "Parameters": {
+    "InstanceType": {
+      "Type": "String",
+      "Default": "t2.micro",
+      "AllowedValues": [
+        "t2.micro"
+      ]
+    },
+    "VpcId": {
+      "Type": "String",
+      "Default": "vpc-3451e549"
+    },
+    "SubnetId": {
+      "Type": "String",
+      "Default": "subnet-30432511"
+    },
+    "KeyName": {
+      "Type": "String",
+      "Default": "awscourse"
+    }
+  },
+  "Resources": {
+    "Runner": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "ImageId": "ami-0e70db31f7e942241",
+        "NetworkInterfaces": [
+          {
+            "NetworkInterfaceId": {
+              "Ref": "SshNetInterface"
+            },
+            "DeviceIndex": 0
+          }
+        ]
+      }
+    },
+    "SshSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Enable SSH access via port 22",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "SshNetInterface": {
+      "Type": "AWS::EC2::NetworkInterface",
+      "Properties": {
+        "Description": "Interface for control SSH traffic",
+        "GroupSet": [
+          {
+            "Ref": "SshSecurityGroup"
+          }
+        ],
+        "SourceDestCheck": "true",
+        "Tags": [
+          {
+            "Key": "Network",
+            "Value": "Control"
+          }
+        ],
+        "SubnetId": {
+          "Ref": "SubnetId"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "PublicIP": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Runner",
+          "PublicIp"
+        ]
+      }
+    }
+  }
+}
