@@ -1,0 +1,61 @@
+---
+Description:
+  Deploy ec2 stack with auto-scaling group
+
+#Metadata:
+#  template metadata
+#
+#
+#Rules:
+#  set of rules
+#
+#Mappings:
+#  set of mappings
+#
+#Conditions:
+#  set of conditions
+#
+#Transform:
+#  set of transforms
+
+# Todo: AvailabilityZone vs Regions
+#  Todo: VPCs vs Subnets
+
+Parameters:
+  Subnets: # list of subnets in VPC
+    Type: CommaDelimitedList
+    Default: subnet-30432511, subnet-9c4e65d1, subnet-3eeab830, subnet-103f5b4f, subnet-163ea670, subnet-8b8e21ba
+  EC2AmiId:
+    Type: String
+    Default: ami-0e70db31f7e942241
+  EC2Type:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+  AutoScalingGroupMin:
+    Type: Number
+    Default: 2
+  AutoScalingGroupMax:
+    Type: Number
+    Default: 4
+
+Resources:
+  EC2Launch:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: !Ref EC2AmiId
+        InstanceType: !Ref EC2Type
+  ASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: !Ref AutoScalingGroupMin
+      MaxSize: !Ref AutoScalingGroupMax
+      LaunchTemplate:
+        LaunchTemplateId: !Ref EC2Launch
+        Version: !GetAtt EC2Launch.LatestVersionNumber
+      VPCZoneIdentifier: !Ref Subnets
+
+#Outputs:
+#  set of outputs
