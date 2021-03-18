@@ -1,28 +1,20 @@
----
+# TODO: AvailabilityZone vs Regions
+# TODO: VPCs vs Subnets
+
 Description:
   Deploy ec2 stack with auto-scaling group
 
-#Metadata:
-#  template metadata
-#
-#
-#Rules:
-#  set of rules
-#
-#Mappings:
-#  set of mappings
-#
-#Conditions:
-#  set of conditions
-#
-#Transform:
-#  set of transforms
-
-# Todo: AvailabilityZone vs Regions
-#  Todo: VPCs vs Subnets
-
 Parameters:
-  Subnets: # list of subnets in VPC
+  KeyName:
+    Type: String
+    Default: awscourse
+  SSHSubnetId:
+    Type: String
+    Default: subnet-30432511
+  SSHVpcId:
+    Type: String
+    Default: vpc-3451e549
+  ASGSubnets: # list of subnets in VPC TODO: why?
     Type: CommaDelimitedList
     Default: subnet-30432511, subnet-9c4e65d1, subnet-3eeab830, subnet-103f5b4f, subnet-163ea670, subnet-8b8e21ba
   EC2AmiId:
@@ -47,6 +39,14 @@ Resources:
       LaunchTemplateData:
         ImageId: !Ref EC2AmiId
         InstanceType: !Ref EC2Type
+        # sudo yum install java-1.8.0-openjdk
+        UserData: c3VkbyB5dW0gaW5zdGFsbCBqYXZhLTEuOC4wLW9wZW5qZGs=
+        NetworkInterfaces:
+          - Groups:
+              - Ref: SSHSecurityGroup
+            DeviceIndex: 0
+        KeyName: !Ref KeyName
+
   ASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
@@ -55,7 +55,16 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId: !Ref EC2Launch
         Version: !GetAtt EC2Launch.LatestVersionNumber
-      VPCZoneIdentifier: !Ref Subnets
+      VPCZoneIdentifier: !Ref ASGSubnets
 
-#Outputs:
-#  set of outputs
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Ref: SSHVpcId
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
