@@ -1,0 +1,120 @@
+Description:
+  Deploy s3 + ec2 stack
+
+Parameters:
+  KeyName:
+    Type: String
+    Default: awscourse
+  SSHSubnetId:
+    Type: String
+    Default: subnet-30432511
+  SSHVpcId:
+    Type: String
+    Default: vpc-3451e549
+  EC2Type:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+
+Resources:
+  Runner:
+    Type: AWS::EC2::Instance
+
+#  # TODO: following approach does nothing:
+#    Metadata:
+#      AWS::CloudFormation::Authentication:
+#        S3Access:
+#          type: S3
+#          roleName: !Ref S3ManageRole
+#      AWS::CloudFormation::Init:
+#        config:
+#          files:
+#            /tmp/hello.txt:
+#              source: https://awscourse-03-2021.s3.amazonaws.com/hello.txt
+#              mode: 000644
+#              owner: root
+#              group: root
+#              authentication: S3Access
+
+    Properties:
+      IamInstanceProfile: !Ref S3ManageInstanceProfile
+      InstanceType:
+        Ref: EC2Type
+      KeyName:
+        Ref: KeyName
+      ImageId: ami-0e70db31f7e942241
+      NetworkInterfaces:
+        - NetworkInterfaceId:
+            Ref: SshNetInterface
+          DeviceIndex: 0
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            aws s3 cp s3://awscourse-03-2021/hello.txt /tmp/hello.txt
+
+  S3ManageInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - Ref: S3ManageRole
+
+  S3ManageRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+  RolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: S3ManagePolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: 's3:*'
+            Resource: '*'
+      Roles:
+        - Ref: S3ManageRole
+
+  SshSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Ref: SSHVpcId
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+
+  SshNetInterface:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: Interface for control SSH traffic
+      GroupSet:
+        - Ref: SshSecurityGroup
+      SourceDestCheck: 'true'
+      Tags:
+        - Key: Network
+          Value: Control
+      SubnetId:
+        Ref: SSHSubnetId
+
+Outputs:
+  PublicIP:
+    Value:
+      Fn::GetAtt:
+        - Runner
+        - PublicIp
