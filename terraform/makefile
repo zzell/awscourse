@@ -15,6 +15,7 @@ init-s3:
 	$(INFRA) aws s3 cp /root/terraform/hello.txt s3://$(BUCKET_NAME)
 
 delete-s3:
+	$(INFRA) aws s3 rm s3://$(BUCKET_NAME) --recursive
 	$(INFRA) aws s3api delete-bucket --bucket $(BUCKET_NAME)
 
 tf-help:
