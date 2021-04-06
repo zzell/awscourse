@@ -2,7 +2,7 @@ FROM ubuntu:latest
 
 RUN apt-get update
 RUN apt-get install software-properties-common -y
-RUN apt-get install curl wget unzip gnupg2 lsb-release less -y
+RUN apt-get install git curl wget unzip gnupg2 lsb-release less -y
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip awscliv2.zip \
